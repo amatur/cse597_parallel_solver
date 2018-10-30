@@ -17,7 +17,7 @@ CCFLAGS=-g -Wall -O3
 #~ CCFLAGS=-Wall -O3
 
 
-all: jacobi jacobi_s
+all: jacobi_s_opt jacobi_s
 
 data:	
 	echo -e '"Dimension"' " " '"Time (sec)"' ;
@@ -26,6 +26,12 @@ data:
 	 ./jacobi_s $$i; \
 	done
 
+data_so:	
+	echo -e '"Dimension"' " " '"Time (sec)"' ;
+	for i in 5 10 20 30 40 50 ;	\
+	do	\
+	 ./jacobi_s_opt $$i; \
+	done
 run: 
 	echo "### TESTING WITH 4 PROCESSES ###"; mpirun -np 4 ./jacobi 30 \
 	echo "RUN SERIAL"; ./jacobi_s 30 \	
@@ -41,6 +47,13 @@ jacobi_s: jacobi_s.o matrix_util.o
 
 jacobi_s.o: jacobi_s.cpp jacobi.h
 	$(CXX) $(CCFLAGS) -c $<
+
+jacobi_s_opt: jacobi_s_opt.o matrix_util.o
+	$(CXX) $(CCFLAGS) -o $@ $^
+
+jacobi_s_opt.o: jacobi_s_opt.cpp jacobi.h
+	$(CXX) $(CCFLAGS) -c $<
+	
 	
 lu: lu.o
 	$(CXX) $(CCFLAGS) -o $@ $^
@@ -55,4 +68,4 @@ test: test.o jacobi.o lu.o matrix_util.o
 	$(CXX) $(CCFLAGS) -c $<
 
 clean:
-	rm -f *.o jacobi lu test jacobi_s
+	rm -f *.o jacobi lu test jacobi_s jacobi_s_opt
