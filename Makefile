@@ -6,7 +6,7 @@
 #CXX=mpic++
 
 CXX=mpic++
-CC=mpic++
+#CC=mpic++
 #CXX=tau_cxx.sh
 #CC=tau_cc.sh
 CCFLAGS=-g -Wall -O3 
@@ -17,19 +17,30 @@ CCFLAGS=-g -Wall -O3
 #~ CCFLAGS=-Wall -O3
 
 
-all: jacobi
+all: jacobi jacobi_s
+
+data:	
+	echo -e '"Dimension"' " " '"Time (sec)"' ;
+	for i in 5 10 20 30 40 50 ;	\
+	do	\
+	 ./jacobi_s $$i; \
+	done
 
 run: 
-	echo "### TESTING WITH 4 PROCESSES ###"; mpirun -np 4 ./jacobi 20 \
-	
+	echo "### TESTING WITH 4 PROCESSES ###"; mpirun -np 4 ./jacobi 30 \
+	echo "RUN SERIAL"; ./jacobi_s 30 \	
 #~ run: 
 #~ 	echo "TESTING";\
 #~ 	./test
 
 jacobi: jacobi.o matrix_util.o
-	$(CXX) $(CCFLAGS) -o $@ $^
-	$(CC) $(CCFLAGS) -o $@ $^
 
+
+jacobi_s: jacobi_s.o matrix_util.o
+	$(CXX) $(CCFLAGS) -o $@ $^
+
+jacobi_s.o: jacobi_s.cpp jacobi.h
+	$(CXX) $(CCFLAGS) -c $<
 	
 lu: lu.o
 	$(CXX) $(CCFLAGS) -o $@ $^
@@ -39,14 +50,9 @@ test: test.o jacobi.o lu.o matrix_util.o
 
 %.o: %.cpp %.h
 	$(CXX) $(CCFLAGS) -c $<
-	$(CC) $(CCFLAGS) -c $<
-
-
 
 %.o: %.cpp
 	$(CXX) $(CCFLAGS) -c $<
-	$(CC) $(CCFLAGS) -c $<
 
-	
 clean:
-	rm -f *.o jacobi lu test
+	rm -f *.o jacobi lu test jacobi_s
