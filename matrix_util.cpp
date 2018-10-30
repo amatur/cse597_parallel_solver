@@ -34,7 +34,7 @@ void init1d(double **A, int n){
 void print(double *mat, int numRows){
 	
 	for (int x = 0; x < numRows; x++) {
-		printf("%-8.0f ", mat[x]);
+		printf("%-20.0f ", mat[x]);
 	}
 	printf("\n");
 
@@ -43,7 +43,7 @@ void print(double *mat, int numRows){
 void print(double **mat, int numRows){	
 	for (int y = 0; y < numRows; y++) {
 		for (int x = 0; x < numRows; x++) {
-            printf("%-8.0f ", mat[y][x]);
+            printf("%-20.0f ", mat[y][x]);
 		}
 		printf("\n");
 	}

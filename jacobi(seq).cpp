@@ -1,5 +1,4 @@
-#include <mpi.h>
-#include <stdio.h>		
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
@@ -8,28 +7,7 @@
 #include "matrix_util.h"
 using namespace std;
 
-int block_decompose(const int n, const int p, const int rank)
-{
-    return n / p + ((rank < n % p) ? 1 : 0);
-}
 
-int block_decompose(const int n, MPI_Comm comm)
-{
-    int rank, p;
-    MPI_Comm_rank(comm, &rank);
-    MPI_Comm_size(comm, &p);
-    return block_decompose(n, p, rank);
-}
-
-int block_decompose_by_dim(const int n, MPI_Comm comm, int dim)
-{
-    // get dimensions
-    int dims[2];
-    int periods[2];
-    int coords[2];
-    MPI_Cart_get(comm, 2, dims, periods, coords);
-    return block_decompose(n, dims[dim], coords[dim]);
-}
 
 void matmul(double **A, double *B, double *C, int Dim){
 	int i, k;
@@ -212,114 +190,61 @@ void sparse(double **sparseMatrix, int dim, double **compactMatrix){
 
 
 int main(int argc, char* argv[]){
-    int world_rank, world_size;    
-
-   //init mpi 
-    MPI_Init(&argc, &argv);
-    
     int n = strtol(argv[1], NULL, 10);
-   // get communicator size
-    MPI_Comm comm = MPI_COMM_WORLD;
-    MPI_Comm_size(comm, &world_size);
-    MPI_Comm_rank(comm, &world_rank);
-
-    char processor_name[MPI_MAX_PROCESSOR_NAME];
-    int name_len;
-    MPI_Get_processor_name(processor_name, &name_len);
-
-    printf("I am (rank %d) of %d size\n\n", world_rank, world_size);
-
-
-    // create 2D cartesian grid for the processors (enable reordering)
-      int q = (int)sqrt(world_size);
-      MPI_Comm grid_comm;
-      int dims[2] = {q, q};
-      int periods[2] = {0, 0};
-      MPI_Cart_create(MPI_COMM_WORLD, 2, dims, periods, 1, &grid_comm);
-      // get the rank of process with coordinates (0,0)
-      int rank00;
-      int myrank;
-      int coords[2] = {0, 0};
-      MPI_Cart_rank(grid_comm, coords, &rank00);
-      MPI_Comm_rank(grid_comm, &myrank);
-
-    //if I am process (0,0) I load A, B and gen x
-    if (myrank == rank00){
-             
-        int N = n*n;
-        double **A;
-        double *b, *x;
-        
-        srand(0);
-        
-        
-        clock_t start, end;
-        //start = clock();		//time count starts 
-        
-        //-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-//
-        // Allocate memory for A matrix 
-         //-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-//
-        //~ A = (double**) calloc(N,sizeof(double*));
-        //~ A2 = (double**) calloc(N,sizeof(double*));
-        //~ for(int i =0; i <N; i++){
-            //~ A[i] = (double*) calloc(N,sizeof(double));
-            //~ A2[i] = (double*) calloc(N,sizeof(double));
-            //~ 
-        //~ }
-        
-        
-        //printf("A Matrix: \n");
-        //print(A, N);
-        
-        //printf("b Matrix: ");
-        //print(b, N);
-        
-        //printf("x Matrix: ");
-        //print(x, N);
-        
-        //-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-//
-        // Set our tolerance and maximum iterations
-        double eps = 1.0e-4;
-        int maxit = 2*N*N;
-   
-        init2d(&A, N);
-        fillA_poisson(A, n);
-        
-        init1d(&b, N);
-        init1d(&x, N);
-        
-        //fill b
-        for(int i =0; i<N; i++)
-        {
-            b[i] = (double)rand()/(double)((RAND_MAX)*1.0);
-        }
+    
+    int N = n*n;
+    double **A;
+    double *b, *x;
+    
+	srand(0);
 	
-        MPI_Bcast(&N, 1, MPI_INT, rank00, grid_comm);
-
-        jacobiSolve(N, A, b, x, eps, maxit);
+	
+    clock_t start, end;
+    //start = clock();		//time count starts 
+    
+    //-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-//
+	// Allocate memory for A matrix 
+	 //-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-//
+	//~ A = (double**) calloc(N,sizeof(double*));
+    //~ A2 = (double**) calloc(N,sizeof(double*));
+    //~ for(int i =0; i <N; i++){
+		//~ A[i] = (double*) calloc(N,sizeof(double));
+		//~ A2[i] = (double*) calloc(N,sizeof(double));
+		//~ 
+	//~ }
+	init2d(&A, N);
+    fillA_poisson(A, n);
+    
+    init1d(&b, N);
+    init1d(&x, N);
+    
+    //fill b
+    for(int i =0; i<N; i++)
+    {
+        b[i] = (double)rand()/(double)((RAND_MAX)*1.0);
     }
-
-
+	
+    
+    
+    printf("A Matrix: \n");
+    //print(A, N);
+    
+    printf("b Matrix: ");
+    //print(b, N);
+    
+    printf("x Matrix: ");
+    //print(x, N);
+    
+    //-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-//
+	// Set our tolerance and maximum iterations
+    double eps = 1.0e-4;
+    int maxit = 2*N*N;
+    
     //-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-//
 	// Run jacobi
-	double t_start, t_end, time_secs;
- 
-    // start timer
-    t_start = MPI_Wtime();
-	t_end = MPI_Wtime();
-    time_secs = t_end - t_start;
-    
-    cout<< time_secs << " seconds." << endl;
-    MPI_File fh; 
-    MPI_File_open(MPI_COMM_WORLD, "time.out",
-        MPI_MODE_CREATE|MPI_MODE_WRONLY,
-        MPI_INFO_NULL, &fh); 
-    
-    MPI_File_write(fh, &time_secs, 1, MPI_DOUBLE, MPI_STATUS_IGNORE); 
-    MPI_File_close(&fh);    
-
-    //printf("x Matrix: ");
-    //print(x, N);
+	jacobiSolve(N, A, b, x, eps, maxit);
+	printf("x Matrix: ");
+    print(x, N);
     
     //end = clock();//time count stops 
     
@@ -327,11 +252,9 @@ int main(int argc, char* argv[]){
     
     //printf("nTime taken: %.20lf seconds.\n", total_time); //in seconds
     
-    MPI_Finalize();
+    
     
     return 0;
 }
-
-
 
 
