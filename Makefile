@@ -34,7 +34,7 @@ run:
 #~ 	./test
 
 jacobi: jacobi.o matrix_util.o
-
+	$(CXX) $(CCFLAGS) -o $@ $^
 
 jacobi_s: jacobi_s.o matrix_util.o
 	$(CXX) $(CCFLAGS) -o $@ $^
