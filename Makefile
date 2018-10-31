@@ -3,12 +3,14 @@
 # module use /storage/work/a/awl5173/toShare/tauPdt/tau
 # module load adamsTau_2.27 
 
-#CXX=mpic++
-
 CXX=mpic++
 #CC=mpic++
+
 #CXX=tau_cxx.sh
 #CC=tau_cc.sh
+
+LIBS=-lm
+
 CCFLAGS=-g -Wall -O3 
 #CXX=g++
 #~ F90= tau_f90.sh
@@ -17,7 +19,8 @@ CCFLAGS=-g -Wall -O3
 #~ CCFLAGS=-Wall -O3
 
 
-all: jacobi_s_opt jacobi_s
+all: jacobi
+#all: jacobi_s_opt jacobi_s
 
 data:	
 	echo -e '"Dimension"' " " '"Time (sec)"' ;
@@ -33,14 +36,15 @@ data_so:
 	 ./jacobi_s_opt $$i; \
 	done
 run: 
-	echo "### TESTING WITH 4 PROCESSES ###"; mpirun -np 4 ./jacobi 30 \
-	echo "RUN SERIAL"; ./jacobi_s 30 \	
+	echo "### TESTING WITH 4 PROCESSES ###"; mpirun -np 4 ./jacobi 40 \
+	echo "RUN SERIAL"; ./jacobi_s 40 \	
+
 #~ run: 
 #~ 	echo "TESTING";\
 #~ 	./test
 
 jacobi: jacobi.o matrix_util.o
-	$(CXX) $(CCFLAGS) -o $@ $^
+	$(CXX) $(CCFLAGS) -o $@ $^ $(LIBS)
 
 jacobi_s: jacobi_s.o matrix_util.o
 	$(CXX) $(CCFLAGS) -o $@ $^

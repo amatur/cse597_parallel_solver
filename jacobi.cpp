@@ -68,7 +68,7 @@ void jacobiSolve(int n, double** A, double* B, double* x, double eps = 1e-10, in
 	
 	double* y = (double*) calloc(n,sizeof(double));
 	
-	double *C = (double *) malloc( n * sizeof(double));
+	//double *C = (double *) malloc( n * sizeof(double));
 	int it = 0;
 	
 	int k = 0;
@@ -127,7 +127,8 @@ void jacobiSolve(int n, double** A, double* B, double* x, double eps = 1e-10, in
 		
 	}while(true);
 	
-	
+    free(sigma);
+    free(y);	
 }
 
 
@@ -167,62 +168,48 @@ void fillA_poisson(double **A, int n){
     
 }
 
+double Distance(double *X_Old, double *X_New, int N)
+{
+   int  index;
+    double Sum;
 
-void sparse(double **sparseMatrix, int dim, double **compactMatrix){
+   Sum = 0.0;
+    for(index=0; index<N; index++)
+        Sum += (X_New[index] - X_Old[index])*(X_New[index]-X_Old[index]);
 
-//~ Two vectors, i and j, that specify the row and column subscripts
-//~ One vector, s, containing the real or complex data you want to store in the sparse matrix. Vectors i, j and s should all have the same length.
-//~ Two scalar arrays, m and n, that specify the dimensions of the sparse matrix to be created
-//~ An optional scalar array that specifies the maximum amount of storage that can be allocated for this sparse array
-
-    int size = 0; 
-    for (int i = 0; i < dim; i++) 
-        for (int j = 0; j < dim; j++) 
-            if (sparseMatrix[i][j] != 0) 
-                size++;
-    compactMatrix = (double**) calloc(3 ,sizeof(double*));
-    for(int i = 0; i < 3; i++){
-		compactMatrix[i] = (double*) calloc(size,sizeof(double));
-		
-	}
-    
-    
-    // Making of new matrix 
-    int k = 0; 
-    for (int i = 0; i < dim; i++) 
-        for (int j = 0; j < dim; j++) 
-            if (sparseMatrix[i][j] != 0) 
-            { 
-                compactMatrix[0][k] = i; 
-                compactMatrix[1][k] = j; 
-                compactMatrix[2][k] = sparseMatrix[i][j]; 
-                k++; 
-            } 
-  
-    for (int i=0; i<3; i++) 
-    { 
-        for (int j=0; j<size; j++) 
-            printf("%lf ", compactMatrix[i][j]); 
-  
-        printf("\n"); 
-    } 
-}         
-               
-                
+   return(Sum);
+}
 
 
 int main(int argc, char* argv[]){
-    int world_rank, world_size;    
 	double t_start, t_end, time_secs;
+	
+  double **A, *A_1d, *b;
+  double *X_New, *X_Old, *Bloc_X, tmp;
+	
+	
     t_start = MPI_Wtime();
    //init mpi 
     MPI_Init(&argc, &argv);
     
     int n = strtol(argv[1], NULL, 10);
-   // get communicator size
+    int N = n*n;
+	//-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-//
+	// Set our tolerance and maximum iterations
+	double eps = 1.0e-4;
+	int maxit = 2*N*N;
+
+
+    // get communicator size
+    int world_rank, world_size;    
+    
     MPI_Comm comm = MPI_COMM_WORLD;
     MPI_Comm_size(comm, &world_size);
     MPI_Comm_rank(comm, &world_rank);
+    
+    int Root = 0;
+    int &my_rank = world_rank;
+    int &num_proc = world_size;
 
     char processor_name[MPI_MAX_PROCESSOR_NAME];
     int name_len;
@@ -230,31 +217,30 @@ int main(int argc, char* argv[]){
 
     printf("I am (rank %d) of %d size\n\n", world_rank, world_size);
 
+    //starting difficult part
+
 
     // create 2D cartesian grid for the processors (enable reordering)
-      int q = (int)sqrt(world_size);
-      MPI_Comm grid_comm;
-      int dims[2] = {q, q};
-      int periods[2] = {0, 0};
-      MPI_Cart_create(MPI_COMM_WORLD, 2, dims, periods, 1, &grid_comm);
-      // get the rank of process with coordinates (0,0)
-      int rank00;
-      int myrank;
-      int coords[2] = {0, 0};
-      MPI_Cart_rank(grid_comm, coords, &rank00);
-      MPI_Comm_rank(grid_comm, &myrank);
+//      int q = (int)sqrt(world_size);
+//      MPI_Comm grid_comm;
+//      int dims[2] = {q, q};
+//      int periods[2] = {0, 0};
+//      MPI_Cart_create(MPI_COMM_WORLD, 2, dims, periods, 1, &grid_comm);
+//      // get the rank of process with coordinates (0,0)
+//      int rank00;
+//      int my_rank;
+//      int coords[2] = {0, 0};
+//      MPI_Cart_rank(grid_comm, coords, &rank00);
+//      MPI_Comm_rank(grid_comm, &my_rank);
 
     //if I am process (0,0) I load A, B and gen x
-    if (myrank == rank00){
+    if (my_rank == 0){
              
-        int N = n*n;
-        double **A;
-        double *b, *x;
         
         srand(0);
         
         
-        clock_t start, end;
+        //clock_t start, end;
         //start = clock();		//time count starts 
         
         //-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-//
@@ -269,25 +255,24 @@ int main(int argc, char* argv[]){
         //~ }
         
         
-        //printf("A Matrix: \n");
-        //print(A, N);
         
-        //printf("b Matrix: ");
-        //print(b, N);
         
         //printf("x Matrix: ");
         //print(x, N);
         
-        //-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-//
-        // Set our tolerance and maximum iterations
-        double eps = 1.0e-4;
-        int maxit = 2*N*N;
+        
    
         init2d(&A, N);
         fillA_poisson(A, n);
         
         init1d(&b, N);
-        init1d(&x, N);
+        
+        //printf("A Matrix: \n");
+        //print(A, N);
+        
+        //printf("b Matrix: ");
+        //print(b, N);
+        //init1d(&x, N);
         
         //fill b
         for(int i =0; i<N; i++)
@@ -295,12 +280,98 @@ int main(int argc, char* argv[]){
             b[i] = (double)rand()/(double)((RAND_MAX)*1.0);
         }
 	
-        MPI_Bcast(&N, 1, MPI_INT, rank00, grid_comm);
-
-        jacobiSolve(N, A, b, x, eps, maxit);
+        //MPI_Bcast(&N, 1, MPI_INT, rank00, grid_comm);
+          /* ...Convert Matrix_A into 1-D array Input_A ......*/
+         A_1d  = (double *)malloc(N*N*sizeof(double));
+        int index    = 0;
+        for(int irow=0; irow<N; irow++)
+            for(int icol=0; icol<N; icol++)
+                A_1d[index++] = A[irow][icol];
+        
+		
+        //jacobiSolve(N, A, b, x, eps, maxit);
+        //print(x, N);
     }
 
+    /* .... Broad cast the size of the matrix to all ....*/
+    /*N: dim of mat, 1: 1 integer, Root proc*/
+    MPI_Bcast(&N, 1, MPI_INT, Root, MPI_COMM_WORLD);  
+	
 
+    // check if the number of processor given to us
+    // can be appropriately decomposed
+    // for that we need num_proc as factor of N
+    if(N % num_proc != 0) {
+        MPI_Finalize();
+        if(my_rank == 0){
+            printf("Matrix Can not be Striped Evenly ..... \n");
+         }
+        return 1;
+     }
+    int num_rows_block = N/num_proc;
+    cout<<"Broadcast done from"<<my_rank<<"  and nrb"<<num_rows_block<<endl;
+
+    // now the partitioned A, B and x for each of the processor
+     /*......Memory of input matrix and vector on each process .....*/
+    double *ARecv = (double *) malloc (num_rows_block * N* sizeof(double));
+    double *BRecv = (double *) malloc (num_rows_block * sizeof(double));
+    
+    /*......Scatter the Input Data to all process ......*/
+    //if(my_rank == 0){
+		MPI_Scatter (A_1d, num_rows_block * N, MPI_DOUBLE, ARecv, num_rows_block * N,
+		MPI_DOUBLE, 0, MPI_COMM_WORLD);
+
+		
+		 MPI_Scatter (b, num_rows_block, MPI_DOUBLE, BRecv, num_rows_block,
+		MPI_DOUBLE, 0, MPI_COMM_WORLD);
+		
+		cout<<"Scatter done from"<<my_rank<<"  and nrb"<<num_rows_block<<endl;
+
+	//}
+
+
+	X_New  = (double *) malloc (N * sizeof(double));
+  X_Old  = (double *) malloc (N * sizeof(double));
+  Bloc_X = (double *) malloc (num_rows_block * sizeof(double));
+
+  /* Initailize X[i] = B[i] */
+  for(int irow=0; irow<num_rows_block; irow++)
+	  Bloc_X[irow] = BRecv[irow];
+
+  MPI_Allgather(Bloc_X, num_rows_block, MPI_DOUBLE, X_New, num_rows_block,
+					 MPI_DOUBLE, MPI_COMM_WORLD);
+
+	int GlobalRowNo, index;
+  int Iteration = 0;
+  do{
+
+	   for(int irow=0; irow<N; irow++)
+			 X_Old[irow] = X_New[irow];
+
+      for(int irow=0; irow<num_rows_block; irow++){
+
+          GlobalRowNo = (my_rank * num_rows_block) + irow;
+			 Bloc_X[irow] = BRecv[irow];
+			 index = irow * N;
+
+			 for(int icol=0; icol<GlobalRowNo; icol++){
+				 Bloc_X[irow] -= X_Old[icol] * ARecv[index + icol];
+			 }
+			 for(int icol=GlobalRowNo+1; icol<N; icol++){
+				 Bloc_X[irow] -= X_Old[icol] * ARecv[index + icol];
+			 }
+          Bloc_X[irow] = Bloc_X[irow] / ARecv[irow*N + GlobalRowNo];
+		}
+
+  		MPI_Allgather(Bloc_X, num_rows_block, MPI_DOUBLE, X_New,
+						  num_rows_block, MPI_DOUBLE, MPI_COMM_WORLD);
+      Iteration++;
+  }while( (Iteration < maxit) && (Distance(X_Old, X_New, N) >= eps));
+	
+
+	//~ if(my_rank==0){
+		//~ print(X_New, N);
+	//~ }
     //-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-//
 	// Run jacobi
  
@@ -328,7 +399,7 @@ int main(int argc, char* argv[]){
     
 	t_end = MPI_Wtime();
     time_secs = t_end - t_start;
-    cout<< "Time is: "<< time_secs << " seconds." << endl;
+    cout<< "Time(sec): "<< time_secs << endl;
     return 0;
 }
 
