@@ -3,59 +3,70 @@
 # module use /storage/work/a/awl5173/toShare/tauPdt/tau
 # module load adamsTau_2.27 
 
-#CXX=mpic++
-#CC=mpic++
 
-#CXX=mpic++ -fopenmp
+## uncomment for parallel without tau
+#CXX=mpic++
+#CC=mpicc
+
 CXX=tau_cxx.sh
 #CC=tau_cc.sh
 
 LIBS=-lm
 
 CCFLAGS= -Wall -g -O3 
-#CXX=g++
-#~ F90= tau_f90.sh
-#~ CXX=tau_cxx.sh
-#~ CC=tau_cc.sh
+
 #~ CCFLAGS=-Wall -O3
 
 
-#all: jacobi jacobip2
-#all: jacobi_s_opt jacobi_s
-#all: jacobi_s
-all: jacobi
+#uncomment this line for Serial only
+#all: jacobi_s jacobi_s_opt
 
-data:	
-	echo -e '"Dimension"' " " '"Time (sec)"' ;
-	for i in 5 10 20 30 40 50 ;	\
-	do	\
-	 ./jacobi_s $$i; \
-	done
+#uncomment this line for Parallel only
+all: jacobi jacobi_p_unopt
+
+#all: jacobi jacobi_p_unopt jacobi_s jacobi_s_opt
 
 data_parallel:	
 	for i in 10;\
 	do	\
 		mpirun -np $$i ./jacobi 10; \
 	done
-data_so:	
+
+data_serial:	
+	echo -e '"Dimension"' " " '"Time (sec)"' ;
+	for i in 5 10 20 30 40 50 ;	\
+	do	\
+	 ./jacobi_s $$i; \
+	done
+
+data_serial_opt:	
 	echo -e '"Dimension"' " " '"Time (sec)"' ;
 	for i in 5 10 20 30 40 50 ;	\
 	do	\
 	 ./jacobi_s_opt $$i; \
 	done
-run: 
-	#echo "## v2"; mpirun -np 20 ./jacobip2 1600 ; 
-	echo 20 \
-	echo "### TESTING WITH 4 PROCESSES ###"; mpirun -np 40 ./jacobi 80 \
-	#echo "RUN SERIAL"; ./jacobi_s 40 \	
 
-#~ run: 
+run: 
+	echo "### RUN PARALLEL:"; mpirun -np 10 ./jacobi 20 \
+	echo "RUN SERIAL"; ./jacobi_s_opt 20 \	
+
+
+runp: 
+	echo "## RUNNING PARALLEL JACOBI"; mpirun -np 5 ./jacobi 40 \
+
+runs: 
+	echo "## RUNNING SERIAL JACOBI"; ./jacobi_s_opt 15 \	
+
+
+runpu: 
+	echo "## RUNNING PARALLEL JACOBI *Unoptimized*"; mpirun -np 5 ./jacobi_p_unopt 40 \
+
+runsu: 
+	echo "## RUNNING SERIAL JACOBI *Unoptimized*"; ./jacobi_s 15 \	
+
+#~ test: 
 #~ 	echo "TESTING";\
 #~ 	./test
-
-jacobip2: jacobip2.o
-	$(CXX) $(CCFLAGS) -o $@ $^ $(LIBS)
-
 
 jacobi: jacobi.o matrix_util.o
 	$(CXX) $(CCFLAGS) -o $@ $^ $(LIBS)
@@ -72,6 +83,14 @@ jacobi_s_opt: jacobi_s_opt.o matrix_util.o
 jacobi_s_opt.o: jacobi_s_opt.cpp jacobi.h
 	$(CXX) $(CCFLAGS) -c $<
 	
+
+jacobi_p_unopt: jacobi_p_unopt.o matrix_util.o
+	$(CXX) $(CCFLAGS) -o $@ $^
+
+jacobi_p_unopt.o: jacobi_p_unopt.cpp jacobi.h
+	$(CXX) $(CCFLAGS) -c $<
+	
+	
 	
 lu: lu.o
 	$(CXX) $(CCFLAGS) -o $@ $^
@@ -86,4 +105,4 @@ test: test.o jacobi.o lu.o matrix_util.o
 	$(CXX) $(CCFLAGS) -c $<
 
 clean:
-	rm -f *.o jacobi lu test jacobi_s jacobi_s_opt
+	rm -f *.o jacobi lu test jacobi_s jacobi_s_opt jacobi_p_unopt profile.*

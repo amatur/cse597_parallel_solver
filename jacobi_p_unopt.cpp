@@ -260,7 +260,18 @@ int main(int argc, char* argv[]){
 
     /* .... Broad cast the size of the matrix to all ....*/
     /*N: dim of mat, 1: 1 integer, Root proc*/
-    MPI_Bcast(&N, 1, MPI_INT, Root, MPI_COMM_WORLD);  
+   if (my_rank == Root) {
+    // If we are the root process, send our data to everyone
+    for (int i = 0; i < num_proc; i++) {
+      if (i != my_rank) {
+        MPI_Send(&N, 1, MPI_INT, i, 0, comm);
+      }
+    }
+  } else {
+    // If we are a receiver process, receive the data from the root
+    MPI_Recv(&N, 1, MPI_INT, Root, 0, comm,
+            MPI_STATUS_IGNORE);
+  }
 	
    //~ if (my_rank == Root) {
     //~ // If we are the root process, send our data to everyone

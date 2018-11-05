@@ -1,8 +1,7 @@
-#to find factors of a number
-
-for (( i=1; i<=100; i++ ));do
+echo "Serial version"
+for (( i=1; i<=80; i++ ));do
         echo $i;
-        mpirun -q -np $i ./jacobi 48;
+        ./jacobi_s_opt $i;
         #num=$((num/$i))
 done > file.txt
 sed -i '/MXM/d' ./file.txt

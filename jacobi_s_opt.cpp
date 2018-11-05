@@ -4,34 +4,10 @@
 #include <math.h>
 #include <time.h>
 #include <cstring>
-#include<mpi.h>
+//#include<mpi.h>
 #include "matrix_util.h"
 using namespace std;
 
-
-
-void matmul(double **A, double *B, double *C, int Dim){
-	int i, k;
-	for (i = 0; i < Dim; i++){
-		C[i] = 0;
-		for (k = 0; k < Dim; k++){
-			C[i] += A[i][k] * B[k];
-		}
-	}	
-		
-}
-
-
-
-double getError(double **A, double* B, double *C, double *x, int Dim){
-	matmul(A, x, C, Dim);
-	double sum = 0.0;
-	for (int i = 0; i<Dim; i++) {
-		sum += (C[i] - x[i])*(C[i] - x[i]);
-	}
-	sum = sqrt(sum);
-	return sum;
-}
 
 
 void jacobiSolve(int n, double** A, double* B, double* x, double eps = 1e-10, int maxit = 100){
@@ -54,52 +30,30 @@ void jacobiSolve(int n, double** A, double* B, double* x, double eps = 1e-10, in
 	do{
 		it++;
 		
-		double totSum = 0.0;
-        double localSum = 0.0;
-        double localInd = 0.0;
+		double error = 0.0;
 		for (int i=0; i<n; i++) {
 			sigma[i] = B[i];
 			for (int j = 0; j < n; j++) {
-				if(A[i][j]!=0){
+				//if(j!=1){
 					sigma[i] -= A[i][j] * x[j];
 					
-				}
+				//}
 			}
 			sigma[i] /= A[i][i];
 			
 			y[i] += sigma[i];
 			
 			
-			
-			// Create a residual from part of the domain (when the indices  are 0, 5, 10, ...)
-            if ( (i % 5) == 0)
-            {
-                localSum += ( (sigma[i] >= 0.0) ? sigma[i] : -sigma[i]);
-
-            }
-
-            // Create a residual from a single point
-            if (i == n/2)
-            {
-                localInd += ( (sigma[i] >= 0.0) ? sigma[i] : -sigma[i]);
-            }
-
-            // Create a residual over all of the domain
-            totSum += ( (sigma[i] >= 0.0) ? sigma[i] : -sigma[i]);
+            error += ( (sigma[i] >= 0.0) ? sigma[i] : -sigma[i]);
 		}
 		k = k + 1;
 		//print(x, n);
-		//printf("%f", getError(A, B, C, x, n));
-		
 		
        
         // Update x
         for(int i=0; i<n; i++) x[i] = y[i];
-        
-        // Print the residuals to the screen
-        //printf("%4d\t%.3e\t%.3e\t%.3e \n",k,totSum,localSum,localInd);
-        //getError(A, B, C, x, n)
-		if(totSum <=eps || it >= maxit){
+
+		if(error <=eps || it >= maxit){
 			break;
 		}
 		
@@ -191,9 +145,8 @@ void sparse(double **sparseMatrix, int dim, double **compactMatrix){
 
 
 int main(int argc, char* argv[]){
-   
     double t_start, t_end, time_secs;
-    t_start = MPI_Wtime();
+    //t_start = MPI_Wtime();
 
      int n = strtol(argv[1], NULL, 10);
     
@@ -258,11 +211,11 @@ int main(int argc, char* argv[]){
     //double total_time = ((double) (end - start))/ CLOCKS_PER_SEC ;//calulate total time
     
     //printf("nTime taken: %.20lf seconds.\n", total_time); //in seconds
-    t_end = MPI_Wtime();
+    //t_end = MPI_Wtime();
     time_secs = t_end - t_start;
     //cout<<"Dimension \t Time(sec) <<endl; 
     //cout<< N << "\t"<< time_secs << endl;
-    printf("%d %lf\n", N, time_secs); 
+    //printf("%d %lf\n", N, time_secs); 
     
     return 0;
 }
