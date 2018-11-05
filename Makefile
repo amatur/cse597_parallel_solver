@@ -3,15 +3,16 @@
 # module use /storage/work/a/awl5173/toShare/tauPdt/tau
 # module load adamsTau_2.27 
 
-CXX=mpic++
+#CXX=mpic++
 #CC=mpic++
 
-#CXX=tau_cxx.sh
+#CXX=mpic++ -fopenmp
+CXX=tau_cxx.sh
 #CC=tau_cc.sh
 
 LIBS=-lm
 
-CCFLAGS=-g -Wall -O3 
+CCFLAGS= -Wall -g -O3 
 #CXX=g++
 #~ F90= tau_f90.sh
 #~ CXX=tau_cxx.sh
@@ -19,8 +20,10 @@ CCFLAGS=-g -Wall -O3
 #~ CCFLAGS=-Wall -O3
 
 
-all: jacobi
+#all: jacobi jacobip2
 #all: jacobi_s_opt jacobi_s
+#all: jacobi_s
+all: jacobi
 
 data:	
 	echo -e '"Dimension"' " " '"Time (sec)"' ;
@@ -29,6 +32,11 @@ data:
 	 ./jacobi_s $$i; \
 	done
 
+data_parallel:	
+	for i in 10;\
+	do	\
+		mpirun -np $$i ./jacobi 10; \
+	done
 data_so:	
 	echo -e '"Dimension"' " " '"Time (sec)"' ;
 	for i in 5 10 20 30 40 50 ;	\
@@ -36,12 +44,18 @@ data_so:
 	 ./jacobi_s_opt $$i; \
 	done
 run: 
-	echo "### TESTING WITH 4 PROCESSES ###"; mpirun -np 4 ./jacobi 40 \
-	echo "RUN SERIAL"; ./jacobi_s 40 \	
+	#echo "## v2"; mpirun -np 20 ./jacobip2 1600 ; 
+	echo 20 \
+	echo "### TESTING WITH 4 PROCESSES ###"; mpirun -np 40 ./jacobi 80 \
+	#echo "RUN SERIAL"; ./jacobi_s 40 \	
 
 #~ run: 
 #~ 	echo "TESTING";\
 #~ 	./test
+
+jacobip2: jacobip2.o
+	$(CXX) $(CCFLAGS) -o $@ $^ $(LIBS)
+
 
 jacobi: jacobi.o matrix_util.o
 	$(CXX) $(CCFLAGS) -o $@ $^ $(LIBS)

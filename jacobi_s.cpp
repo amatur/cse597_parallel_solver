@@ -4,7 +4,7 @@
 #include <math.h>
 #include <time.h>
 #include <cstring>
-#include<mpi.h>
+//#include<mpi.h>
 #include "matrix_util.h"
 using namespace std;
 
@@ -191,9 +191,8 @@ void sparse(double **sparseMatrix, int dim, double **compactMatrix){
 
 
 int main(int argc, char* argv[]){
-   
     double t_start, t_end, time_secs;
-    t_start = MPI_Wtime();
+    //t_start = MPI_Wtime();
 
      int n = strtol(argv[1], NULL, 10);
     
@@ -258,7 +257,7 @@ int main(int argc, char* argv[]){
     //double total_time = ((double) (end - start))/ CLOCKS_PER_SEC ;//calulate total time
     
     //printf("nTime taken: %.20lf seconds.\n", total_time); //in seconds
-    t_end = MPI_Wtime();
+    //t_end = MPI_Wtime();
     time_secs = t_end - t_start;
     //cout<<"Dimension \t Time(sec) <<endl; 
     //cout<< N << "\t"<< time_secs << endl;
