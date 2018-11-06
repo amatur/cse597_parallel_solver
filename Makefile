@@ -6,7 +6,7 @@
 
 ## uncomment for parallel without tau
 #CXX=mpic++
-#CC=mpicc
+CC=mpic++
 
 CXX=tau_cxx.sh
 #CC=tau_cc.sh
@@ -22,9 +22,9 @@ CCFLAGS= -Wall -g -O3
 #all: jacobi_s jacobi_s_opt
 
 #uncomment this line for Parallel only
-all: jacobi jacobi_p_unopt
+#all: jacobi jacobi_p_unopt
 
-#all: jacobi jacobi_p_unopt jacobi_s jacobi_s_opt
+all: jacobi jacobi_p_unopt jacobi_s jacobi_s_opt
 
 data_parallel:	
 	for i in 10;\
@@ -47,22 +47,22 @@ data_serial_opt:
 	done
 
 run: 
-	echo "### RUN PARALLEL:"; mpirun -np 10 ./jacobi 20 \
-	echo "RUN SERIAL"; ./jacobi_s_opt 20 \	
+	echo "### RUN PARALLEL:"; mpirun -np 10 ./jacobi 40 \
+	echo "RUN SERIAL"; ./jacobi_s_opt 40 \	
 
 
 runp: 
-	echo "## RUNNING PARALLEL JACOBI"; mpirun -np 5 ./jacobi 40 \
+	echo "## RUNNING PARALLEL JACOBI"; mpirun -np 10 ./jacobi 40 \
 
 runs: 
-	echo "## RUNNING SERIAL JACOBI"; ./jacobi_s_opt 15 \	
+	echo "## RUNNING SERIAL JACOBI"; ./jacobi_s_opt 40 \	
 
 
 runpu: 
-	echo "## RUNNING PARALLEL JACOBI *Unoptimized*"; mpirun -np 5 ./jacobi_p_unopt 40 \
+	echo "## RUNNING PARALLEL JACOBI *Unoptimized*"; mpirun -np 10 ./jacobi_p_unopt 40 \
 
 runsu: 
-	echo "## RUNNING SERIAL JACOBI *Unoptimized*"; ./jacobi_s 15 \	
+	echo "## RUNNING SERIAL JACOBI *Unoptimized*"; ./jacobi_s 10 \	
 
 #~ test: 
 #~ 	echo "TESTING";\
@@ -72,16 +72,16 @@ jacobi: jacobi.o matrix_util.o
 	$(CXX) $(CCFLAGS) -o $@ $^ $(LIBS)
 
 jacobi_s: jacobi_s.o matrix_util.o
-	$(CXX) $(CCFLAGS) -o $@ $^
+	$(CC) $(CCFLAGS) -o $@ $^
 
 jacobi_s.o: jacobi_s.cpp jacobi.h
-	$(CXX) $(CCFLAGS) -c $<
+	$(CC) $(CCFLAGS) -c $<
 
 jacobi_s_opt: jacobi_s_opt.o matrix_util.o
-	$(CXX) $(CCFLAGS) -o $@ $^
+	$(CC) $(CCFLAGS) -o $@ $^
 
 jacobi_s_opt.o: jacobi_s_opt.cpp jacobi.h
-	$(CXX) $(CCFLAGS) -c $<
+	$(CC) $(CCFLAGS) -c $<
 	
 
 jacobi_p_unopt: jacobi_p_unopt.o matrix_util.o

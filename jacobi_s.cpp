@@ -7,14 +7,14 @@
 #include <math.h>
 #include <time.h>
 #include <cstring>
-//#include<mpi.h>
+#include<mpi.h>
 #include "matrix_util.h"
 using namespace std;
 
 
-double MPI_Wtime(){
-    return 1;
-}
+//double MPI_Wtime(){
+  //  return 1;
+//}
 
 
 void matmul(double **A, double *B, double *C, int Dim){
